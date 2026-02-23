@@ -79,7 +79,7 @@ jobs:
         run: npx semantic-release
 
       - name: Get released version
-        id: version
+        id: release-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -93,13 +93,13 @@ jobs:
           fi
 
       - name: Pack and upload MCPB bundle
-        if: steps.version.outputs.released == 'true'
+        if: steps.release-version.outputs.released == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm install -g @anthropic-ai/mcpb
           npm run pack:mcpb
-          gh release upload "v${{ steps.version.outputs.version }}" autotask-mcp.mcpb \
+          gh release upload "v${{ steps.release-version.outputs.version }}" autotask-mcp.mcpb \
             --repo ${{ github.repository }} --clobber
 
   docker:
@@ -152,12 +152,12 @@ jobs:
           push: true
           tags: |
             ghcr.io/wyre-technology/autotask-mcp:latest
-            ghcr.io/wyre-technology/autotask-mcp:v${{ steps.version.outputs.version }}
+            ghcr.io/wyre-technology/autotask-mcp:v${{ steps.release-version.outputs.version }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VERSION=${{ steps.version.outputs.version }}
+            VERSION=${{ steps.release-version.outputs.version }}
             COMMIT_SHA=${{ github.sha }}
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
 
