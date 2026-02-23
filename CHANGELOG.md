@@ -1,3 +1,10 @@
+## [2.7.3](https://github.com/wyre-technology/autotask-mcp/compare/v2.7.2...v2.7.3) (2026-02-23)
+
+
+### Bug Fixes
+
+* rename duplicate step id 'version' to 'release-version' in docker job ([5e093cb](https://github.com/wyre-technology/autotask-mcp/commit/5e093cb019b5fdc457b91c67efb807ce00207cd2))
+
 ## [2.7.2](https://github.com/wyre-technology/autotask-mcp/compare/v2.7.1...v2.7.2) (2026-02-17)
 
 
