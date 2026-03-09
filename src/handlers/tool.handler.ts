@@ -381,6 +381,62 @@ export class AutotaskToolHandler {
         return { result: id, message: `Successfully created quote with ID: ${id}` };
       }],
 
+      // Opportunities
+      ['autotask_get_opportunity', async (a) => {
+        const r = await s.getOpportunity(a.opportunityId); return { result: r, message: 'Opportunity retrieved successfully' };
+      }],
+      ['autotask_search_opportunities', async (a) => {
+        const r = await s.searchOpportunities({ companyId: a.companyId, searchTerm: a.searchTerm, status: a.status, pageSize: a.pageSize });
+        return { result: r, message: `Found ${r.length} opportunities` };
+      }],
+
+      // Products
+      ['autotask_get_product', async (a) => {
+        const r = await s.getProduct(a.productId); return { result: r, message: 'Product retrieved successfully' };
+      }],
+      ['autotask_search_products', async (a) => {
+        const r = await s.searchProducts({ searchTerm: a.searchTerm, isActive: a.isActive, pageSize: a.pageSize });
+        return { result: r, message: `Found ${r.length} products` };
+      }],
+
+      // Services
+      ['autotask_get_service', async (a) => {
+        const r = await s.getService(a.serviceId); return { result: r, message: 'Service retrieved successfully' };
+      }],
+      ['autotask_search_services', async (a) => {
+        const r = await s.searchServices({ searchTerm: a.searchTerm, isActive: a.isActive, pageSize: a.pageSize });
+        return { result: r, message: `Found ${r.length} services` };
+      }],
+
+      // Service Bundles
+      ['autotask_get_service_bundle', async (a) => {
+        const r = await s.getServiceBundle(a.serviceBundleId); return { result: r, message: 'Service bundle retrieved successfully' };
+      }],
+      ['autotask_search_service_bundles', async (a) => {
+        const r = await s.searchServiceBundles({ searchTerm: a.searchTerm, isActive: a.isActive, pageSize: a.pageSize });
+        return { result: r, message: `Found ${r.length} service bundles` };
+      }],
+
+      // Quote Items
+      ['autotask_get_quote_item', async (a) => {
+        const r = await s.getQuoteItem(a.quoteItemId); return { result: r, message: 'Quote item retrieved successfully' };
+      }],
+      ['autotask_search_quote_items', async (a) => {
+        const r = await s.searchQuoteItems({ quoteId: a.quoteId, searchTerm: a.searchTerm, pageSize: a.pageSize });
+        return { result: r, message: `Found ${r.length} quote items` };
+      }],
+      ['autotask_create_quote_item', async (a) => {
+        const id = await s.createQuoteItem({ quoteID: a.quoteId, name: a.name, description: a.description, quantity: a.quantity, unitPrice: a.unitPrice, unitCost: a.unitCost, unitDiscount: a.unitDiscount, lineDiscount: a.lineDiscount, percentageDiscount: a.percentageDiscount, isOptional: a.isOptional, serviceID: a.serviceID, productID: a.productID, serviceBundleID: a.serviceBundleID, sortOrderID: a.sortOrderID });
+        return { result: id, message: `Successfully created quote item with ID: ${id}` };
+      }],
+      ['autotask_update_quote_item', async (a) => {
+        await s.updateQuoteItem(a.quoteItemId, { quantity: a.quantity, unitPrice: a.unitPrice, unitDiscount: a.unitDiscount, lineDiscount: a.lineDiscount, percentageDiscount: a.percentageDiscount, isOptional: a.isOptional, sortOrderID: a.sortOrderID });
+        return { result: true, message: `Quote item ${a.quoteItemId} updated successfully` };
+      }],
+      ['autotask_delete_quote_item', async (a) => {
+        await s.deleteQuoteItem(a.quoteItemId); return { result: true, message: `Quote item ${a.quoteItemId} deleted successfully` };
+      }],
+
       // Picklist tools
       ['autotask_list_queues', async () => {
         const queues = await this.picklistCache.getQueues();
