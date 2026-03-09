@@ -385,7 +385,7 @@
         "description": "Add lazy loading support for MCP tools to reduce context overhead. Currently 35 tools are loaded upfront which consumes significant context tokens. Implement progressive discovery pattern.",
         "details": "The autotask-mcp server exposes 35 tools which creates context overhead when all tool schemas are loaded upfront. Implement lazy loading using one of two approaches:\n\n**Option A: Server-Side Progressive Discovery (Recommended)**\nImplement a three-tool meta-interface inspired by mcp-dynamic-proxy:\n1. `autotask_list_categories` - Returns tool categories (Companies, Contacts, Tickets, TimeEntries, Resources, Utility) without full schemas\n2. `autotask_list_tools` - Returns tools for a specific category with full JSON schemas\n3. `autotask_execute_tool` - Proxies execution to the actual tool\n\nThis reduces initial context from 35 tools to 3 tools (97% reduction).\n\n**Option B: Client-Side Compatibility**\nEnsure compatibility with Claude Code's built-in MCP Tool Search feature which auto-detects when tools exceed 10% context and switches to on-demand discovery.\n\n**Implementation Steps:**\n1. Add tool categorization metadata to existing tools\n2. Create meta-tools for progressive discovery\n3. Add CLI flag `--lazy-loading` to enable/disable\n4. Update tool handler to support both modes\n5. Add documentation for lazy loading configuration\n6. Benchmark token usage before/after",
         "testStrategy": "1. Measure baseline token usage with all 35 tools loaded. 2. Implement lazy loading and measure reduced token usage. 3. Test tool discovery flow: list_categories -> list_tools -> execute_tool. 4. Verify backward compatibility - existing direct tool calls still work. 5. Test with Claude Code MCP Tool Search enabled. 6. Performance benchmark: response time for tool discovery vs direct call.",
-        "status": "pending",
+        "status": "in-progress",
         "dependencies": [
           "25"
         ],
@@ -395,7 +395,8 @@
           "v1.2.0",
           "feature",
           "performance"
-        ]
+        ],
+        "updatedAt": "2026-03-09T22:44:54.891Z"
       },
       {
         "id": "29",
@@ -416,7 +417,7 @@
         "description": "Implement MCP elicitation protocol to enable interactive parameter collection when required tool parameters are missing.",
         "details": "MCP elicitation allows servers to request additional information from users during tool execution. This is essential for:\n\n1. **Missing Required Parameters**: When a tool is called without required params (e.g., create_ticket without companyId)\n2. **Disambiguation**: When search results return multiple matches\n3. **Confirmation**: For destructive operations (delete, update)\n4. **Multi-Step Workflows**: Collecting parameters across multiple steps\n\n**Implementation:**\n1. Add elicitation support to tool handler\n2. Define elicitation schemas for each tool's required parameters\n3. Implement confirmation prompts for create/update/delete operations\n4. Add disambiguation UI for multiple search results\n5. Support conversation context for multi-turn interactions\n\n**Example Elicitation Flow:**\n```\nUser: 'Create a ticket'\nServer: [elicit] 'Which company is this ticket for?'\nUser: 'Acme Corp'\nServer: [elicit] 'Found 2 companies: Acme Corp Inc, Acme Corporation. Which one?'\nUser: 'Acme Corp Inc'\nServer: [elicit] 'What is the ticket title?'\nUser: 'Network issue'\nServer: [execute] create_ticket(companyId=123, title='Network issue')\n```",
         "testStrategy": "1. Test elicitation triggers for missing required params. 2. Test disambiguation with multiple search results. 3. Test confirmation prompts for destructive operations. 4. Test multi-turn conversation context preservation. 5. Test graceful fallback when elicitation unsupported by client.",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [],
         "priority": "low",
         "subtasks": [],
@@ -425,7 +426,7 @@
           "feature",
           "ux"
         ],
-        "updatedAt": "2026-03-09T22:31:46.260Z"
+        "updatedAt": "2026-03-09T22:36:17.555Z"
       },
       {
         "id": "31",
@@ -633,9 +634,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-03-09T22:31:46.261Z",
+      "lastModified": "2026-03-09T22:44:54.892Z",
       "taskCount": 43,
-      "completedCount": 39,
+      "completedCount": 40,
       "tags": [
         "master"
       ]
