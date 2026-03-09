@@ -1,3 +1,10 @@
+# [2.11.0](https://github.com/wyre-technology/autotask-mcp/compare/v2.10.4...v2.11.0) (2026-03-09)
+
+
+### Features
+
+* Quote Builder - create quotes with line items from cost sheets ([#29](https://github.com/wyre-technology/autotask-mcp/issues/29)) ([5da3a98](https://github.com/wyre-technology/autotask-mcp/commit/5da3a98895446b051923afa3aa568f51bc423f23))
+
 ## [Unreleased]
 
 
