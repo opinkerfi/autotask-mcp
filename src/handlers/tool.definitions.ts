@@ -1708,6 +1708,20 @@ export const TOOL_DEFINITIONS: McpTool[] = [
       },
       required: ['toolName']
     }
+  },
+  {
+    name: 'autotask_router',
+    description: 'Intelligent tool router - describe what you want to do and get the right tool suggestion with pre-filled parameters. Use this when unsure which tool to call.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        intent: {
+          type: 'string',
+          description: 'Natural language description of what you want to do (e.g., "find tickets for Acme Corp", "log 2 hours on ticket 12345", "create a quote for client")'
+        }
+      },
+      required: ['intent']
+    }
   }
 ];
 

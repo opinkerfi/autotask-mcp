@@ -76,11 +76,12 @@ describe('Lazy Loading - Tool Handler', () => {
     const service = new AutotaskService(mockConfig, mockLogger);
     const handler = new AutotaskToolHandler(service, mockLogger, true);
     const tools = await handler.listTools();
-    expect(tools.length).toBe(3);
+    expect(tools.length).toBe(4);
     const names = tools.map(t => t.name);
     expect(names).toContain('autotask_list_categories');
     expect(names).toContain('autotask_list_category_tools');
     expect(names).toContain('autotask_execute_tool');
+    expect(names).toContain('autotask_router');
   });
 
   test('autotask_list_categories should return all categories', async () => {
@@ -117,5 +118,50 @@ describe('Lazy Loading - Tool Handler', () => {
     expect(result.isError).toBe(true);
     const parsed = JSON.parse(result.content[0].text);
     expect(parsed.error).toContain('Unknown category');
+  });
+});
+
+describe('Decision Tree Router', () => {
+  test('should route ticket search intent', async () => {
+    const service = new AutotaskService(mockConfig, mockLogger);
+    const handler = new AutotaskToolHandler(service, mockLogger);
+    const result = await handler.callTool('autotask_router', { intent: 'find tickets for Acme Corp' });
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.data.suggestedTool).toBe('autotask_search_tickets');
+  });
+
+  test('should route time entry intent with extracted params', async () => {
+    const service = new AutotaskService(mockConfig, mockLogger);
+    const handler = new AutotaskToolHandler(service, mockLogger);
+    const result = await handler.callTool('autotask_router', { intent: 'log 2 hours on ticket 12345' });
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.data.suggestedTool).toBe('autotask_create_time_entry');
+    expect(parsed.data.suggestedParams.hoursWorked).toBe(2);
+    expect(parsed.data.suggestedParams.ticketID).toBe(12345);
+  });
+
+  test('should route quote creation intent', async () => {
+    const service = new AutotaskService(mockConfig, mockLogger);
+    const handler = new AutotaskToolHandler(service, mockLogger);
+    const result = await handler.callTool('autotask_router', { intent: 'create a new quote for client' });
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.data.suggestedTool).toBe('autotask_create_quote');
+  });
+
+  test('should fallback to list_categories for unknown intent', async () => {
+    const service = new AutotaskService(mockConfig, mockLogger);
+    const handler = new AutotaskToolHandler(service, mockLogger);
+    const result = await handler.callTool('autotask_router', { intent: 'do something random' });
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.data.suggestedTool).toBe('autotask_list_categories');
+  });
+
+  test('should route company search with quoted name', async () => {
+    const service = new AutotaskService(mockConfig, mockLogger);
+    const handler = new AutotaskToolHandler(service, mockLogger);
+    const result = await handler.callTool('autotask_router', { intent: 'search companies for "Wyre Technology"' });
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.data.suggestedTool).toBe('autotask_search_companies');
+    expect(parsed.data.suggestedParams.searchTerm).toBe('Wyre Technology');
   });
 });

@@ -323,6 +323,340 @@ export class AutotaskToolHandler {
   }
 
   /**
+   * Route a natural-language intent to the best matching tool with pre-filled parameters.
+   */
+  private routeIntent(rawIntent: string): {
+    suggestedTool: string;
+    suggestedParams: Record<string, any>;
+    description: string;
+    requiredParams: string[];
+  } {
+    // Extract quoted strings from original (preserves case) before lowercasing
+    const quotedStrings = rawIntent.match(/["']([^"']+)["']/g)?.map(s => s.slice(1, -1)) || [];
+    const intent = rawIntent.toLowerCase();
+
+    // Extract potential IDs from the intent
+    const numbers = intent.match(/\b\d+\b/g)?.map(Number) || [];
+
+    // Extract hours pattern (e.g., "2 hours", "1.5 hrs")
+    const hoursMatch = intent.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)/i);
+    const hours = hoursMatch ? parseFloat(hoursMatch[1]) : undefined;
+
+    // Decision tree based on keyword matching
+    // Time tracking (check BEFORE tickets — "log hours on ticket" should route here, not to tickets)
+    if (/\b(?:hours?|hrs?)\b/.test(intent) && /\b(?:log|enter|add|record|track|create)\b/.test(intent)) {
+      const params: Record<string, any> = {};
+      if (hours) params.hoursWorked = hours;
+      // Look for ticket ID pattern
+      const ticketIdMatch = intent.match(/ticket\s*#?\s*(\d+)/i) || intent.match(/on\s+(\d+)/);
+      if (ticketIdMatch) params.ticketID = parseInt(ticketIdMatch[1]);
+      else if (numbers[0] && !hours) params.ticketID = numbers[0];
+      else if (numbers.length > 1) params.ticketID = numbers.find(n => n > 100) || numbers[1]; // larger numbers are likely ticket IDs
+      return {
+        suggestedTool: 'autotask_create_time_entry',
+        suggestedParams: params,
+        description: 'Log a time entry',
+        requiredParams: [...(!params.ticketID ? ['ticketID'] : []), ...(!params.hoursWorked ? ['hoursWorked'] : [])],
+      };
+    }
+
+    // Ticket operations
+    if (/\b(?:tickets?|issues?|requests?)\b/.test(intent)) {
+      if (/\b(?:create|open|new|submit)\b/.test(intent)) {
+        const params: Record<string, any> = {};
+        if (numbers[0]) params.companyId = numbers[0];
+        if (quotedStrings[0]) params.title = quotedStrings[0];
+        return {
+          suggestedTool: 'autotask_create_ticket',
+          suggestedParams: params,
+          description: 'Create a new service ticket',
+          requiredParams: [...(!params.companyId ? ['companyId'] : []), ...(!params.title ? ['title'] : [])],
+        };
+      }
+      if (/\b(?:update|change|modify|edit|assign|reassign|close)\b/.test(intent)) {
+        const params: Record<string, any> = {};
+        if (numbers[0]) params.ticketId = numbers[0];
+        return {
+          suggestedTool: 'autotask_update_ticket',
+          suggestedParams: params,
+          description: 'Update an existing ticket',
+          requiredParams: !params.ticketId ? ['ticketId'] : [],
+        };
+      }
+      if (/\b(?:details?|info|view|show|get)\b/.test(intent) && numbers[0]) {
+        return {
+          suggestedTool: 'autotask_get_ticket_details',
+          suggestedParams: { ticketID: numbers[0], fullDetails: true },
+          description: 'Get full ticket details by ID',
+          requiredParams: [],
+        };
+      }
+      if (/\b(?:notes?|comments?)\b/.test(intent)) {
+        if (/\b(?:add|create|post)\b/.test(intent)) {
+          const params: Record<string, any> = {};
+          if (numbers[0]) params.ticketId = numbers[0];
+          return {
+            suggestedTool: 'autotask_create_ticket_note',
+            suggestedParams: params,
+            description: 'Add a note to a ticket',
+            requiredParams: [...(!params.ticketId ? ['ticketId'] : []), 'title', 'description'],
+          };
+        }
+        const params: Record<string, any> = {};
+        if (numbers[0]) params.ticketId = numbers[0];
+        return {
+          suggestedTool: 'autotask_search_ticket_notes',
+          suggestedParams: params,
+          description: 'List notes on a ticket',
+          requiredParams: !params.ticketId ? ['ticketId'] : [],
+        };
+      }
+      // Default: search tickets
+      const params: Record<string, any> = {};
+      if (quotedStrings[0]) params.searchTerm = quotedStrings[0];
+      else if (/for\s+(\w[\w\s]*?)(?:\.|$|,)/i.test(intent)) {
+        const match = intent.match(/for\s+(\w[\w\s]*?)(?:\.|$|,)/i);
+        if (match) params.searchTerm = match[1].trim();
+      }
+      if (numbers[0]) params.companyID = numbers[0];
+      return {
+        suggestedTool: 'autotask_search_tickets',
+        suggestedParams: params,
+        description: 'Search for tickets',
+        requiredParams: [],
+      };
+    }
+
+    // Quote operations (check before company — "quote for client" should match quote, not company)
+    if (/\b(?:quotes?|proposals?|estimates?)\b/.test(intent)) {
+      if (/\b(?:item|line|add.*to)\b/.test(intent)) {
+        const params: Record<string, any> = {};
+        if (numbers[0]) params.quoteId = numbers[0];
+        return {
+          suggestedTool: 'autotask_create_quote_item',
+          suggestedParams: params,
+          description: 'Add a line item to a quote',
+          requiredParams: [...(!params.quoteId ? ['quoteId'] : []), 'name', 'quantity', 'unitPrice'],
+        };
+      }
+      if (/\b(?:create|new|build)\b/.test(intent)) {
+        const params: Record<string, any> = {};
+        if (quotedStrings[0]) params.name = quotedStrings[0];
+        return {
+          suggestedTool: 'autotask_create_quote',
+          suggestedParams: params,
+          description: 'Create a new quote',
+          requiredParams: [...(!params.name ? ['name'] : []), 'companyId'],
+        };
+      }
+      const params: Record<string, any> = {};
+      if (numbers[0]) params.quoteId = numbers[0];
+      return {
+        suggestedTool: numbers[0] ? 'autotask_get_quote' : 'autotask_search_quotes',
+        suggestedParams: params,
+        description: numbers[0] ? 'Get quote details' : 'Search for quotes',
+        requiredParams: [],
+      };
+    }
+
+    // Company operations
+    if (/\b(?:company|companies|organization|client|account)\b/.test(intent)) {
+      if (/\b(?:create|new|add)\b/.test(intent)) {
+        const params: Record<string, any> = {};
+        if (quotedStrings[0]) params.companyName = quotedStrings[0];
+        return {
+          suggestedTool: 'autotask_create_company',
+          suggestedParams: params,
+          description: 'Create a new company',
+          requiredParams: !params.companyName ? ['companyName'] : [],
+        };
+      }
+      if (/\b(?:update|edit|modify)\b/.test(intent)) {
+        const params: Record<string, any> = {};
+        if (numbers[0]) params.id = numbers[0];
+        return {
+          suggestedTool: 'autotask_update_company',
+          suggestedParams: params,
+          description: 'Update company details',
+          requiredParams: !params.id ? ['id'] : [],
+        };
+      }
+      const params: Record<string, any> = {};
+      if (quotedStrings[0]) params.searchTerm = quotedStrings[0];
+      return {
+        suggestedTool: 'autotask_search_companies',
+        suggestedParams: params,
+        description: 'Search for companies',
+        requiredParams: [],
+      };
+    }
+
+    // Contact operations
+    if (/\b(?:contacts?|person|people)\b/.test(intent)) {
+      if (/\b(?:create|new|add)\b/.test(intent)) {
+        return {
+          suggestedTool: 'autotask_create_contact',
+          suggestedParams: {},
+          description: 'Create a new contact',
+          requiredParams: ['firstName', 'lastName', 'companyID'],
+        };
+      }
+      const params: Record<string, any> = {};
+      if (quotedStrings[0]) params.searchTerm = quotedStrings[0];
+      return {
+        suggestedTool: 'autotask_search_contacts',
+        suggestedParams: params,
+        description: 'Search for contacts',
+        requiredParams: [],
+      };
+    }
+
+    // Project operations
+    if (/\b(?:projects?)\b/.test(intent)) {
+      if (/\b(?:create|new)\b/.test(intent)) {
+        return {
+          suggestedTool: 'autotask_create_project',
+          suggestedParams: {},
+          description: 'Create a new project',
+          requiredParams: ['projectName', 'companyID'],
+        };
+      }
+      const params: Record<string, any> = {};
+      if (quotedStrings[0]) params.searchTerm = quotedStrings[0];
+      return {
+        suggestedTool: 'autotask_search_projects',
+        suggestedParams: params,
+        description: 'Search for projects',
+        requiredParams: [],
+      };
+    }
+
+    // Resource operations
+    if (/\b(?:resource|technician|tech|engineer|staff)\b/.test(intent)) {
+      const params: Record<string, any> = {};
+      if (quotedStrings[0]) params.searchTerm = quotedStrings[0];
+      return {
+        suggestedTool: 'autotask_search_resources',
+        suggestedParams: params,
+        description: 'Search for resources/technicians',
+        requiredParams: [],
+      };
+    }
+
+    // Expense operations
+    if (/\b(?:expense|receipt)\b/.test(intent)) {
+      if (/\b(?:create|new|submit)\b/.test(intent)) {
+        return {
+          suggestedTool: 'autotask_create_expense_report',
+          suggestedParams: {},
+          description: 'Create an expense report',
+          requiredParams: ['name', 'submitterId', 'weekEndingDate'],
+        };
+      }
+      return {
+        suggestedTool: 'autotask_search_expense_reports',
+        suggestedParams: {},
+        description: 'Search expense reports',
+        requiredParams: [],
+      };
+    }
+
+    // Configuration items / assets
+    if (/\b(?:config|asset|device|hardware|ci)\b/.test(intent)) {
+      const params: Record<string, any> = {};
+      if (quotedStrings[0]) params.searchTerm = quotedStrings[0];
+      return {
+        suggestedTool: 'autotask_search_configuration_items',
+        suggestedParams: params,
+        description: 'Search configuration items/assets',
+        requiredParams: [],
+      };
+    }
+
+    // Product/service catalog
+    if (/\b(?:product|service|bundle|catalog)\b/.test(intent)) {
+      if (/\b(?:bundle)\b/.test(intent)) {
+        return {
+          suggestedTool: 'autotask_search_service_bundles',
+          suggestedParams: {},
+          description: 'Search service bundles',
+          requiredParams: [],
+        };
+      }
+      if (/\b(?:service)\b/.test(intent)) {
+        return {
+          suggestedTool: 'autotask_search_services',
+          suggestedParams: {},
+          description: 'Search services',
+          requiredParams: [],
+        };
+      }
+      return {
+        suggestedTool: 'autotask_search_products',
+        suggestedParams: {},
+        description: 'Search products',
+        requiredParams: [],
+      };
+    }
+
+    // Contract operations
+    if (/\b(?:contract|agreement)\b/.test(intent)) {
+      return {
+        suggestedTool: 'autotask_search_contracts',
+        suggestedParams: {},
+        description: 'Search contracts',
+        requiredParams: [],
+      };
+    }
+
+    // Invoice operations
+    if (/\b(?:invoice|bill|billing)\b/.test(intent)) {
+      return {
+        suggestedTool: 'autotask_search_invoices',
+        suggestedParams: {},
+        description: 'Search invoices',
+        requiredParams: [],
+      };
+    }
+
+    // Field info / picklist
+    if (/\b(?:field|picklist|dropdown|options)\b/.test(intent)) {
+      const entityMatch = intent.match(/(?:for|on|of)\s+(\w+)/i);
+      return {
+        suggestedTool: 'autotask_get_field_info',
+        suggestedParams: entityMatch ? { entityType: entityMatch[1] } : {},
+        description: 'Get field definitions and picklist values',
+        requiredParams: entityMatch ? [] : ['entityType'],
+      };
+    }
+
+    // Queue / status / priority lookups
+    if (/\b(?:queue|status|statuses|priorit)\b/.test(intent)) {
+      if (/\bqueue\b/.test(intent)) return { suggestedTool: 'autotask_list_queues', suggestedParams: {}, description: 'List ticket queues', requiredParams: [] };
+      if (/\bstatus\b/.test(intent)) return { suggestedTool: 'autotask_list_ticket_statuses', suggestedParams: {}, description: 'List ticket statuses', requiredParams: [] };
+      return { suggestedTool: 'autotask_list_ticket_priorities', suggestedParams: {}, description: 'List ticket priorities', requiredParams: [] };
+    }
+
+    // Connection test
+    if (/\b(?:test|connect|connection|ping|health)\b/.test(intent)) {
+      return {
+        suggestedTool: 'autotask_test_connection',
+        suggestedParams: {},
+        description: 'Test API connection',
+        requiredParams: [],
+      };
+    }
+
+    // Fallback: suggest list_categories
+    return {
+      suggestedTool: 'autotask_list_categories',
+      suggestedParams: {},
+      description: 'Could not determine intent. Use autotask_list_categories to discover available tool categories.',
+      requiredParams: [],
+    };
+  }
+
+  /**
    * List all available tools
    */
   async listTools(): Promise<McpTool[]> {
@@ -331,7 +665,8 @@ export class AutotaskToolHandler {
       const metaTools = TOOL_DEFINITIONS.filter(t =>
         t.name === 'autotask_list_categories' ||
         t.name === 'autotask_list_category_tools' ||
-        t.name === 'autotask_execute_tool'
+        t.name === 'autotask_execute_tool' ||
+        t.name === 'autotask_router'
       );
       this.logger.debug(`Lazy loading mode: exposing ${metaTools.length} meta-tools (${TOOL_DEFINITIONS.length} total available)`);
       return metaTools;
@@ -704,6 +1039,13 @@ export class AutotaskToolHandler {
         // Prevent recursive meta-tool calls
         if (toolName === 'autotask_execute_tool') throw new Error('Cannot recursively execute autotask_execute_tool');
         return handler(toolArgs);
+      }],
+
+      // Intent-based router
+      ['autotask_router', async (a) => {
+        const rawIntent = a.intent || '';
+        const suggestion = this.routeIntent(rawIntent);
+        return { result: suggestion, message: `Suggested tool: ${suggestion.suggestedTool}` };
       }],
     ]);
   }

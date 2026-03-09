@@ -10,6 +10,7 @@
 * **quote-items:** add full CRUD for quote items - autotask_create_quote_item, autotask_get_quote_item, autotask_search_quote_items, autotask_update_quote_item, autotask_delete_quote_item
 * **lazy-loading:** add progressive tool discovery mode (LAZY_LOADING=true) - reduces initial context from 42+ tools to 3 meta-tools (autotask_list_categories, autotask_list_category_tools, autotask_execute_tool)
 * **elicitation:** add MCP elicitation for quote builder - company lookup, opportunity selection, service/product selection
+* **router:** add autotask_router meta-tool for intent-based tool routing with parameter extraction
 
 ## [2.10.3](https://github.com/wyre-technology/autotask-mcp/compare/v2.10.2...v2.10.3) (2026-03-06)
 
