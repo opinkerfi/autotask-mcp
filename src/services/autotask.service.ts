@@ -24,7 +24,7 @@ import {
   AutotaskQuoteItem,
   AutotaskOpportunity,
   AutotaskProduct,
-  AutotaskService,
+  AutotaskServiceEntity,
   AutotaskServiceBundle,
   AutotaskBillingCode,
   AutotaskDepartment,
@@ -1395,19 +1395,19 @@ export class AutotaskService {
   // SERVICES
   // =====================================================
 
-  async getService(id: number): Promise<AutotaskService | null> {
+  async getService(id: number): Promise<AutotaskServiceEntity | null> {
     const client = await this.ensureClient();
     try {
       this.logger.debug(`Getting service with ID: ${id}`);
       const result = await client.services.get(id);
-      return result.data as AutotaskService || null;
+      return result.data as AutotaskServiceEntity || null;
     } catch (error) {
       this.logger.error(`Failed to get service ${id}:`, error);
       throw error;
     }
   }
 
-  async searchServices(options: AutotaskQueryOptionsExtended = {}): Promise<AutotaskService[]> {
+  async searchServices(options: AutotaskQueryOptionsExtended = {}): Promise<AutotaskServiceEntity[]> {
     const client = await this.ensureClient();
     try {
       this.logger.debug('Searching services with options:', options);
@@ -1425,7 +1425,7 @@ export class AutotaskService {
       const result = await client.services.list(queryOptions);
       const items = (result.data as any[]) || [];
       this.logger.info(`Retrieved ${items.length} services`);
-      return items as AutotaskService[];
+      return items as AutotaskServiceEntity[];
     } catch (error) {
       this.logger.error('Failed to search services:', error);
       throw error;

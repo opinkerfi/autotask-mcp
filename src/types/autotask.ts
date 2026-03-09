@@ -283,7 +283,7 @@ export interface AutotaskProduct {
   [key: string]: any;
 }
 
-export interface AutotaskService {
+export interface AutotaskServiceEntity {
   id?: number;
   name?: string;
   description?: string;
