@@ -7,7 +7,7 @@ import { PicklistCache, PicklistValue } from '../services/picklist.cache.js';
 import { Logger } from '../utils/logger.js';
 import { formatCompactResponse, detectEntityType, COMPACT_SEARCH_TOOLS } from '../utils/response.formatter.js';
 import { MappingService } from '../utils/mapping.service.js';
-import { TOOL_DEFINITIONS } from './tool.definitions.js';
+import { TOOL_DEFINITIONS, TOOL_CATEGORIES } from './tool.definitions.js';
 
 export interface McpTool {
   name: string;
@@ -33,10 +33,12 @@ export class AutotaskToolHandler {
   protected picklistCache: PicklistCache;
   protected mcpServer: Server | null = null;
   private mappingService: MappingService | null = null;
+  private lazyLoading: boolean;
 
-  constructor(autotaskService: AutotaskService, logger: Logger) {
+  constructor(autotaskService: AutotaskService, logger: Logger, lazyLoading = false) {
     this.autotaskService = autotaskService;
     this.logger = logger;
+    this.lazyLoading = lazyLoading;
     this.picklistCache = new PicklistCache(
       logger,
       (entityType) => this.autotaskService.getFieldInfo(entityType)
@@ -324,6 +326,16 @@ export class AutotaskToolHandler {
    * List all available tools
    */
   async listTools(): Promise<McpTool[]> {
+    if (this.lazyLoading) {
+      // In lazy loading mode, only expose the 3 meta-tools
+      const metaTools = TOOL_DEFINITIONS.filter(t =>
+        t.name === 'autotask_list_categories' ||
+        t.name === 'autotask_list_category_tools' ||
+        t.name === 'autotask_execute_tool'
+      );
+      this.logger.debug(`Lazy loading mode: exposing ${metaTools.length} meta-tools (${TOOL_DEFINITIONS.length} total available)`);
+      return metaTools;
+    }
     this.logger.debug(`Listed ${TOOL_DEFINITIONS.length} available tools`);
     return TOOL_DEFINITIONS;
   }
@@ -664,6 +676,34 @@ export class AutotaskToolHandler {
           pageSize: a.pageSize
         } as any);
         return { result: r, message: `Found ${r.length} time entries` };
+      }],
+
+      // Meta-tools for progressive discovery
+      ['autotask_list_categories', async () => {
+        const categories = Object.entries(TOOL_CATEGORIES).map(([name, cat]) => ({
+          name,
+          description: cat.description,
+          toolCount: cat.tools.length,
+        }));
+        return { result: categories, message: `Found ${categories.length} tool categories with ${Object.values(TOOL_CATEGORIES).reduce((sum, c) => sum + c.tools.length, 0)} total tools` };
+      }],
+      ['autotask_list_category_tools', async (a) => {
+        const category = TOOL_CATEGORIES[a.category];
+        if (!category) {
+          const available = Object.keys(TOOL_CATEGORIES).join(', ');
+          throw new Error(`Unknown category "${a.category}". Available: ${available}`);
+        }
+        const tools = TOOL_DEFINITIONS.filter(t => category.tools.includes(t.name));
+        return { result: tools, message: `Found ${tools.length} tools in "${a.category}" category` };
+      }],
+      ['autotask_execute_tool', async (a) => {
+        const toolName = a.toolName;
+        const toolArgs = a.arguments || {};
+        const handler = this.getDispatchTable().get(toolName);
+        if (!handler) throw new Error(`Unknown tool: ${toolName}`);
+        // Prevent recursive meta-tool calls
+        if (toolName === 'autotask_execute_tool') throw new Error('Cannot recursively execute autotask_execute_tool');
+        return handler(toolArgs);
       }],
     ]);
   }

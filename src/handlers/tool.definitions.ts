@@ -1665,5 +1665,95 @@ export const TOOL_DEFINITIONS: McpTool[] = [
       },
       required: []
     }
+  },
+
+  // === Meta-tools for progressive discovery (lazy loading mode) ===
+  {
+    name: 'autotask_list_categories',
+    description: 'List available tool categories. Use this to discover what types of Autotask operations are available before loading specific tools.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: []
+    }
+  },
+  {
+    name: 'autotask_list_category_tools',
+    description: 'List tools in a specific category with full schemas. Use after autotask_list_categories to see available tools and their parameters.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        category: {
+          type: 'string',
+          description: 'Category name from autotask_list_categories (e.g., "tickets", "financial", "companies")'
+        }
+      },
+      required: ['category']
+    }
+  },
+  {
+    name: 'autotask_execute_tool',
+    description: 'Execute any Autotask tool by name. Use after discovering tools via autotask_list_category_tools.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        toolName: {
+          type: 'string',
+          description: 'The tool name to execute (e.g., "autotask_search_tickets")'
+        },
+        arguments: {
+          type: 'object',
+          description: 'Arguments to pass to the tool'
+        }
+      },
+      required: ['toolName']
+    }
   }
 ];
+
+export const TOOL_CATEGORIES: Record<string, { description: string; tools: string[] }> = {
+  utility: {
+    description: 'Connection testing and field/picklist discovery',
+    tools: ['autotask_test_connection', 'autotask_list_queues', 'autotask_list_ticket_statuses', 'autotask_list_ticket_priorities', 'autotask_get_field_info']
+  },
+  companies: {
+    description: 'Search, create, and update companies',
+    tools: ['autotask_search_companies', 'autotask_create_company', 'autotask_update_company']
+  },
+  contacts: {
+    description: 'Search and create contacts',
+    tools: ['autotask_search_contacts', 'autotask_create_contact']
+  },
+  tickets: {
+    description: 'Search, create, update tickets and manage ticket notes and attachments',
+    tools: ['autotask_search_tickets', 'autotask_get_ticket_details', 'autotask_create_ticket', 'autotask_update_ticket', 'autotask_get_ticket_note', 'autotask_search_ticket_notes', 'autotask_create_ticket_note', 'autotask_get_ticket_attachment', 'autotask_search_ticket_attachments']
+  },
+  projects: {
+    description: 'Search and create projects, tasks, and project notes',
+    tools: ['autotask_search_projects', 'autotask_create_project', 'autotask_search_tasks', 'autotask_create_task', 'autotask_get_project_note', 'autotask_search_project_notes', 'autotask_create_project_note']
+  },
+  time_and_billing: {
+    description: 'Time entries, billing items, and expense management',
+    tools: ['autotask_create_time_entry', 'autotask_search_time_entries', 'autotask_search_billing_items', 'autotask_get_billing_item', 'autotask_search_billing_item_approval_levels', 'autotask_get_expense_report', 'autotask_search_expense_reports', 'autotask_create_expense_report', 'autotask_create_expense_item']
+  },
+  financial: {
+    description: 'Quotes, quote items, opportunities, invoices, and contracts',
+    tools: ['autotask_get_quote', 'autotask_search_quotes', 'autotask_create_quote', 'autotask_get_quote_item', 'autotask_search_quote_items', 'autotask_create_quote_item', 'autotask_update_quote_item', 'autotask_delete_quote_item', 'autotask_get_opportunity', 'autotask_search_opportunities', 'autotask_search_invoices', 'autotask_search_contracts']
+  },
+  products_and_services: {
+    description: 'Products, services, and service bundles catalog',
+    tools: ['autotask_get_product', 'autotask_search_products', 'autotask_get_service', 'autotask_search_services', 'autotask_get_service_bundle', 'autotask_search_service_bundles']
+  },
+  resources: {
+    description: 'Search for Autotask resources (technicians/staff)',
+    tools: ['autotask_search_resources']
+  },
+  configuration_items: {
+    description: 'Search configuration items (assets/devices)',
+    tools: ['autotask_search_configuration_items']
+  },
+  company_notes: {
+    description: 'Get, search, and create company notes',
+    tools: ['autotask_get_company_note', 'autotask_search_company_notes', 'autotask_create_company_note']
+  }
+};
