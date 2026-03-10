@@ -1,3 +1,10 @@
+## [2.11.1](https://github.com/wyre-technology/autotask-mcp/compare/v2.11.0...v2.11.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* **expenses:** correct weekEnding field name and required params for expense report creation ([226d38d](https://github.com/wyre-technology/autotask-mcp/commit/226d38d3e1f52509421fba6fe3cfa31fca9c3046))
+
 # [2.11.0](https://github.com/wyre-technology/autotask-mcp/compare/v2.10.4...v2.11.0) (2026-03-09)
 
 
