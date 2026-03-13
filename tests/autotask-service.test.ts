@@ -129,10 +129,10 @@ describe('AutotaskService', () => {
       await expect(service.searchExpenseReports()).rejects.toThrow();
       await expect(service.createExpenseReport({ name: 'Test Report', submitterID: 123 })).rejects.toThrow();
       
-      // Expense items should throw specific error
-      await expect(service.getExpenseItem(123, 456)).rejects.toThrow('Expense items API not yet implemented');
-      await expect(service.searchExpenseItems(123)).rejects.toThrow('Expense items API not yet implemented');
-      await expect(service.createExpenseItem(123, { description: 'Test', expenseDate: '2024-01-01', expenseAmount: 100 })).rejects.toThrow('Expense items API not yet implemented');
+      // Expense items
+      await expect(service.getExpenseItem(456)).rejects.toThrow();
+      await expect(service.searchExpenseItems()).rejects.toThrow();
+      await expect(service.createExpenseItem({ description: 'Test', expenseDate: '2024-01-01', expenseCurrencyExpenseAmount: 100 })).rejects.toThrow();
     });
 
     test('should handle quote methods with proper error messages', async () => {
@@ -141,6 +141,44 @@ describe('AutotaskService', () => {
       await expect(service.getQuote(123)).rejects.toThrow();
       await expect(service.searchQuotes()).rejects.toThrow();
       await expect(service.createQuote({ name: 'Test Quote', companyID: 123 })).rejects.toThrow();
+    });
+
+    test('should handle opportunity methods with proper error messages', async () => {
+      const service = new AutotaskService(mockConfig, mockLogger);
+
+      await expect(service.getOpportunity(123)).rejects.toThrow();
+      await expect(service.searchOpportunities()).rejects.toThrow();
+    });
+
+    test('should handle product methods with proper error messages', async () => {
+      const service = new AutotaskService(mockConfig, mockLogger);
+
+      await expect(service.getProduct(123)).rejects.toThrow();
+      await expect(service.searchProducts()).rejects.toThrow();
+    });
+
+    test('should handle service methods with proper error messages', async () => {
+      const service = new AutotaskService(mockConfig, mockLogger);
+
+      await expect(service.getService(123)).rejects.toThrow();
+      await expect(service.searchServices()).rejects.toThrow();
+    });
+
+    test('should handle service bundle methods with proper error messages', async () => {
+      const service = new AutotaskService(mockConfig, mockLogger);
+
+      await expect(service.getServiceBundle(123)).rejects.toThrow();
+      await expect(service.searchServiceBundles()).rejects.toThrow();
+    });
+
+    test('should handle quote item methods with proper error messages', async () => {
+      const service = new AutotaskService(mockConfig, mockLogger);
+
+      await expect(service.getQuoteItem(123)).rejects.toThrow();
+      await expect(service.searchQuoteItems()).rejects.toThrow();
+      await expect(service.createQuoteItem({ quoteID: 1, quantity: 5 })).rejects.toThrow();
+      await expect(service.updateQuoteItem(123, { quantity: 10 })).rejects.toThrow();
+      await expect(service.deleteQuoteItem(1, 123)).rejects.toThrow();
     });
 
     test('should handle unsupported entity methods with proper error messages', async () => {

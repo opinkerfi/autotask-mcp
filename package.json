@@ -1,6 +1,6 @@
 {
   "name": "autotask-mcp",
-  "version": "2.8.1",
+  "version": "2.11.3",
   "description": "MCP (Model Context Protocol) server for Kaseya Autotask PSA integration",
   "main": "dist/entry.js",
   "bin": {
@@ -39,7 +39,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
-    "autotask-node": "github:wyre-technology/autotask-node#v2.1.0",
+    "autotask-node": "github:wyre-technology/autotask-node#289867ec039514643a035a0649a2d214c92912bf",
     "winston": "^3.11.0",
     "zod": "^3.22.4"
   },

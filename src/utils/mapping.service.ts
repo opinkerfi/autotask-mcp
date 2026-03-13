@@ -95,22 +95,14 @@ export class MappingService {
   }
 
   /**
-   * Refresh cache if needed (expired)
+   * Refresh cache if needed (expired). Each refresh method coalesces concurrent
+   * callers internally via refreshCompanyPromise / refreshResourcePromise.
    */
   private async refreshCacheIfNeeded(): Promise<void> {
     const promises: Promise<void>[] = [];
-    
-    if (!this.isCacheValid('companies')) {
-      promises.push(this.refreshCompanyCache());
-    }
-    
-    if (!this.isCacheValid('resources')) {
-      promises.push(this.refreshResourceCache());
-    }
-    
-    if (promises.length > 0) {
-      await Promise.all(promises);
-    }
+    if (!this.isCacheValid('companies')) promises.push(this.refreshCompanyCache());
+    if (!this.isCacheValid('resources')) promises.push(this.refreshResourceCache());
+    if (promises.length > 0) await Promise.all(promises);
   }
 
   /**
@@ -126,19 +118,15 @@ export class MappingService {
         return cachedName;
       }
       
-      // Fallback to direct API lookup
+      // Fallback: fetch the single company by ID rather than downloading the full list
       this.logger.debug(`Company ${companyId} not in cache, doing direct lookup`);
       const company = await this.autotaskService.getCompany(companyId);
-      
-      if (company && company.companyName) {
-        // Add to cache for future use
+      if (company?.companyName) {
         this.cache.companies.set(companyId, company.companyName);
         return company.companyName;
       }
-      
-      // Cache the null result to avoid repeatedly querying a missing/deleted company
-      this.cache.companies.set(companyId, 'Unknown Company');
-      return 'Unknown Company';
+
+      return null;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.warn(`Failed to get company name for ID ${companyId}: ${errorMessage}`);

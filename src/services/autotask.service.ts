@@ -21,6 +21,11 @@ import {
   AutotaskExpenseReport,
   AutotaskExpenseItem,
   AutotaskQuote,
+  AutotaskQuoteItem,
+  AutotaskOpportunity,
+  AutotaskProduct,
+  AutotaskServiceEntity,
+  AutotaskServiceBundle,
   AutotaskBillingCode,
   AutotaskDepartment,
   AutotaskQueryOptionsExtended,
@@ -59,14 +64,24 @@ export class AutotaskService {
       const authConfig: any = {
         username,
         secret,
-        integrationCode
+        integrationCode,
+        // In gateway mode, credentials are validated per-request by the actual
+        // API calls. Skipping the /Version connection test avoids a 30s timeout
+        // on every tool invocation when running stateless/per-request.
+        skipConnectionTest: true,
       };
-      
+
       if (apiUrl) {
         authConfig.apiUrl = apiUrl;
       }
 
-      this.client = await AutotaskClient.create(authConfig);
+      // Disable gzip compression — autotask-node sets Content-Encoding: gzip
+      // on requests but doesn't actually compress the body, causing the Autotask
+      // API to return 500 on child entity endpoints (e.g. POST /Quotes/{id}/Items).
+      // See: wyre-technology/autotask-node issue with transformRequest.
+      this.client = await AutotaskClient.create(authConfig, {
+        enableCompression: false,
+      });
 
       this.logger.info('Autotask client initialized successfully');
     } catch (error) {
@@ -167,7 +182,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating company:', company);
       const result = await client.accounts.create(company as any);
-      const companyId = (result.data as any)?.id;
+      const companyId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Company created with ID: ${companyId}`);
       return companyId;
     } catch (error) {
@@ -262,7 +277,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating contact:', contact);
       const result = await client.contacts.create(contact as any);
-      const contactId = (result.data as any)?.id;
+      const contactId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Contact created with ID: ${contactId}`);
       return contactId;
     } catch (error) {
@@ -482,7 +497,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating ticket:', ticket);
       const result = await client.tickets.create(ticket as any);
-      const ticketId = (result.data as any)?.id;
+      const ticketId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Ticket created with ID: ${ticketId}`);
       return ticketId;
     } catch (error) {
@@ -504,7 +519,7 @@ export class AutotaskService {
     
     try {
       this.logger.debug(`Updating ticket ${id}:`, updates);
-      await client.tickets.update(id, updates as any);
+      await client.tickets.patch(id, updates as any);
       this.logger.info(`Ticket ${id} updated successfully`);
     } catch (error) {
       this.logger.error(`Failed to update ticket ${id}:`, error);
@@ -679,7 +694,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating project:', project);
       const result = await client.projects.create(project as any);
-      const projectId = (result.data as any)?.id;
+      const projectId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Project created with ID: ${projectId}`);
       return projectId;
     } catch (error) {
@@ -785,7 +800,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating configuration item:', configItem);
       const result = await client.configurationItems.create(configItem as any);
-      const configItemId = (result.data as any)?.id;
+      const configItemId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Configuration item created with ID: ${configItemId}`);
       return configItemId;
     } catch (error) {
@@ -928,7 +943,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating task:', task);
       const result = await client.tasks.create(task as any);
-      const taskId = (result.data as any)?.id;
+      const taskId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Task created with ID: ${taskId}`);
       return taskId;
     } catch (error) {
@@ -1161,7 +1176,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating expense report:', report);
       const result = await client.expenseReports.create(report as any);
-      const reportId = (result.data as any)?.id;
+      const reportId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Expense report created with ID: ${reportId}`);
       return reportId;
     } catch (error) {
@@ -1222,7 +1237,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating expense item:', item);
       const result = await client.expenseItems.create(item as any);
-      const itemId = (result.data as any)?.id;
+      const itemId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Expense item created with ID: ${itemId}`);
       return itemId;
     } catch (error) {
@@ -1284,15 +1299,346 @@ export class AutotaskService {
 
   async createQuote(quote: Partial<AutotaskQuote>): Promise<number> {
     const client = await this.ensureClient();
-    
+
     try {
+      // Autotask API requires billToLocationID, shipToLocationID, soldToLocationID,
+      // paymentTerm, paymentType, shippingType for quote creation.
+      // Auto-populate location IDs from the company if not provided.
+      if (quote.companyID && (!quote.billToLocationID || !quote.shipToLocationID || !quote.soldToLocationID)) {
+        try {
+          const locResult = await client.companyLocations.list({
+            filter: { companyID: quote.companyID },
+            pageSize: 10,
+          });
+          const locations = (locResult.data || []) as any[];
+          if (locations.length > 0) {
+            // Use the first location as default for all three if not specified
+            const defaultLocationId = locations[0].id;
+            if (!quote.billToLocationID) quote.billToLocationID = defaultLocationId;
+            if (!quote.shipToLocationID) quote.shipToLocationID = defaultLocationId;
+            if (!quote.soldToLocationID) quote.soldToLocationID = defaultLocationId;
+          }
+        } catch (locError) {
+          this.logger.warn('Could not auto-populate location IDs for quote:', locError);
+        }
+      }
+
       this.logger.debug('Creating quote:', quote);
       const result = await client.quotes.create(quote as any);
-      const quoteId = (result.data as any)?.id;
+      const quoteId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Quote created with ID: ${quoteId}`);
       return quoteId;
     } catch (error) {
       this.logger.error('Failed to create quote:', error);
+      throw error;
+    }
+  }
+
+  // =====================================================
+  // OPPORTUNITIES
+  // =====================================================
+
+  async getOpportunity(id: number): Promise<AutotaskOpportunity | null> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug(`Getting opportunity with ID: ${id}`);
+      const result = await client.opportunities.get(id);
+      return result.data as AutotaskOpportunity || null;
+    } catch (error) {
+      this.logger.error(`Failed to get opportunity ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async searchOpportunities(options: AutotaskQueryOptionsExtended = {}): Promise<AutotaskOpportunity[]> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug('Searching opportunities with options:', options);
+      const filters = [];
+      if (options.companyId) {
+        filters.push({ field: 'companyID', op: 'eq', value: options.companyId });
+      }
+      if (options.searchTerm) {
+        filters.push({ field: 'title', op: 'contains', value: options.searchTerm });
+      }
+      if (options.status !== undefined) {
+        filters.push({ field: 'status', op: 'eq', value: options.status });
+      }
+      const queryOptions = {
+        filter: filters.length > 0 ? filters : [{ field: 'id', op: 'gte', value: 0 }],
+        pageSize: options.pageSize || 25
+      };
+      const result = await client.opportunities.list(queryOptions);
+      const items = (result.data as any[]) || [];
+      this.logger.info(`Retrieved ${items.length} opportunities`);
+      return items as AutotaskOpportunity[];
+    } catch (error) {
+      this.logger.error('Failed to search opportunities:', error);
+      throw error;
+    }
+  }
+
+  async createOpportunity(opportunity: Record<string, any>): Promise<number> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug('Creating opportunity:', opportunity);
+
+      const oppData: Record<string, any> = {
+        title: opportunity.title,
+        companyID: opportunity.companyID,
+        ownerResourceID: opportunity.ownerResourceID,
+        status: opportunity.status,
+        stage: opportunity.stage,
+        projectedCloseDate: opportunity.projectedCloseDate,
+        startDate: opportunity.startDate,
+        probability: opportunity.probability ?? 50,
+        amount: opportunity.amount ?? 0,
+        cost: opportunity.cost ?? 0,
+        useQuoteTotals: opportunity.useQuoteTotals ?? true,
+      };
+
+      if (opportunity.totalAmountMonths) oppData.totalAmountMonths = opportunity.totalAmountMonths;
+      if (opportunity.contactID) oppData.contactID = opportunity.contactID;
+      if (opportunity.description) oppData.description = opportunity.description;
+      if (opportunity.opportunityCategoryID) oppData.opportunityCategoryID = opportunity.opportunityCategoryID;
+
+      const result = await client.opportunities.create(oppData as any);
+      const newId = (result.data as any)?.itemId ?? (result.data as any)?.id;
+      this.logger.info(`Created opportunity with ID: ${newId}`);
+      return newId;
+    } catch (error) {
+      this.logger.error('Failed to create opportunity:', error);
+      throw error;
+    }
+  }
+
+  // =====================================================
+  // PRODUCTS
+  // =====================================================
+
+  async getProduct(id: number): Promise<AutotaskProduct | null> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug(`Getting product with ID: ${id}`);
+      const result = await client.products.get(id);
+      return result.data as AutotaskProduct || null;
+    } catch (error) {
+      this.logger.error(`Failed to get product ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async searchProducts(options: AutotaskQueryOptionsExtended = {}): Promise<AutotaskProduct[]> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug('Searching products with options:', options);
+      const filters = [];
+      if (options.searchTerm) {
+        filters.push({ field: 'name', op: 'contains', value: options.searchTerm });
+      }
+      if (options.isActive !== undefined) {
+        filters.push({ field: 'isActive', op: 'eq', value: options.isActive });
+      }
+      const queryOptions = {
+        filter: filters.length > 0 ? filters : [{ field: 'id', op: 'gte', value: 0 }],
+        pageSize: options.pageSize || 25
+      };
+      const result = await client.products.list(queryOptions);
+      const items = (result.data as any[]) || [];
+      this.logger.info(`Retrieved ${items.length} products`);
+      return items as AutotaskProduct[];
+    } catch (error) {
+      this.logger.error('Failed to search products:', error);
+      throw error;
+    }
+  }
+
+  // =====================================================
+  // SERVICES
+  // =====================================================
+
+  async getService(id: number): Promise<AutotaskServiceEntity | null> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug(`Getting service with ID: ${id}`);
+      const result = await client.services.get(id);
+      return result.data as AutotaskServiceEntity || null;
+    } catch (error) {
+      this.logger.error(`Failed to get service ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async searchServices(options: AutotaskQueryOptionsExtended = {}): Promise<AutotaskServiceEntity[]> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug('Searching services with options:', options);
+      const filters = [];
+      if (options.searchTerm) {
+        filters.push({ field: 'name', op: 'contains', value: options.searchTerm });
+      }
+      if (options.isActive !== undefined) {
+        filters.push({ field: 'isActive', op: 'eq', value: options.isActive });
+      }
+      const queryOptions = {
+        filter: filters.length > 0 ? filters : [{ field: 'id', op: 'gte', value: 0 }],
+        pageSize: options.pageSize || 25
+      };
+      const result = await client.services.list(queryOptions);
+      const items = (result.data as any[]) || [];
+      this.logger.info(`Retrieved ${items.length} services`);
+      return items as AutotaskServiceEntity[];
+    } catch (error) {
+      this.logger.error('Failed to search services:', error);
+      throw error;
+    }
+  }
+
+  // =====================================================
+  // SERVICE BUNDLES
+  // =====================================================
+
+  async getServiceBundle(id: number): Promise<AutotaskServiceBundle | null> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug(`Getting service bundle with ID: ${id}`);
+      const result = await client.serviceBundles.get(id);
+      return result.data as AutotaskServiceBundle || null;
+    } catch (error) {
+      this.logger.error(`Failed to get service bundle ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async searchServiceBundles(options: AutotaskQueryOptionsExtended = {}): Promise<AutotaskServiceBundle[]> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug('Searching service bundles with options:', options);
+      const filters = [];
+      if (options.searchTerm) {
+        filters.push({ field: 'name', op: 'contains', value: options.searchTerm });
+      }
+      if (options.isActive !== undefined) {
+        filters.push({ field: 'isActive', op: 'eq', value: options.isActive });
+      }
+      const queryOptions = {
+        filter: filters.length > 0 ? filters : [{ field: 'id', op: 'gte', value: 0 }],
+        pageSize: options.pageSize || 25
+      };
+      const result = await client.serviceBundles.list(queryOptions);
+      const items = (result.data as any[]) || [];
+      this.logger.info(`Retrieved ${items.length} service bundles`);
+      return items as AutotaskServiceBundle[];
+    } catch (error) {
+      this.logger.error('Failed to search service bundles:', error);
+      throw error;
+    }
+  }
+
+  // =====================================================
+  // QUOTE ITEMS
+  // =====================================================
+
+  async getQuoteItem(id: number): Promise<AutotaskQuoteItem | null> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug(`Getting quote item with ID: ${id}`);
+      const result = await client.quoteItems.get(id);
+      return result.data as AutotaskQuoteItem || null;
+    } catch (error) {
+      this.logger.error(`Failed to get quote item ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async searchQuoteItems(options: AutotaskQueryOptionsExtended & { quoteId?: number } = {}): Promise<AutotaskQuoteItem[]> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug('Searching quote items with options:', options);
+      const filters = [];
+      if (options.quoteId) {
+        filters.push({ field: 'quoteID', op: 'eq', value: options.quoteId });
+      }
+      if (options.searchTerm) {
+        filters.push({ field: 'name', op: 'contains', value: options.searchTerm });
+      }
+      const queryOptions = {
+        filter: filters.length > 0 ? filters : [{ field: 'id', op: 'gte', value: 0 }],
+        pageSize: options.pageSize || 50
+      };
+      const result = await client.quoteItems.list(queryOptions);
+      const items = (result.data as any[]) || [];
+      this.logger.info(`Retrieved ${items.length} quote items`);
+      return items as AutotaskQuoteItem[];
+    } catch (error) {
+      this.logger.error('Failed to search quote items:', error);
+      throw error;
+    }
+  }
+
+  async createQuoteItem(item: Partial<AutotaskQuoteItem>): Promise<number> {
+    const client = await this.ensureClient();
+    try {
+      // Auto-determine quoteItemType based on which ID field is set
+      // 1=Product, 2=Cost(charge), 3=Labor, 4=Expense, 6=Shipping, 11=Service, 12=ServiceBundle
+      let quoteItemType = item.quoteItemType;
+      if (!quoteItemType) {
+        if (item.serviceID) quoteItemType = 11;
+        else if (item.serviceBundleID) quoteItemType = 12;
+        else if (item.productID) quoteItemType = 1;
+        else if (item.chargeID) quoteItemType = 2;
+        else if (item.laborID) quoteItemType = 3;
+        else if (item.expenseID) quoteItemType = 4;
+        else if (item.shippingID) quoteItemType = 6;
+        else quoteItemType = 2; // default to Cost
+      }
+
+      if (!item.quoteID) {
+        throw new Error('quoteID is required to create a quote item');
+      }
+
+      // Apply defaults for required fields, let explicit item values override
+      const quoteItem = {
+        unitDiscount: 0,
+        lineDiscount: 0,
+        percentageDiscount: 0,
+        isOptional: false,
+        ...item,
+        quoteItemType: item.quoteItemType || quoteItemType,
+      };
+      this.logger.debug('Creating quote item:', quoteItem);
+      // QuoteItems is a child entity of Quotes - must use parent URL:
+      // POST /Quotes/{quoteId}/QuoteItems
+      const result = await client.quoteItems.create(item.quoteID, quoteItem as any);
+      const itemId = (result.data as any)?.itemId ?? (result.data as any)?.id;
+      this.logger.info(`Quote item created with ID: ${itemId}`);
+      return itemId;
+    } catch (error) {
+      this.logger.error('Failed to create quote item:', error);
+      throw error;
+    }
+  }
+
+  async updateQuoteItem(id: number, item: Partial<AutotaskQuoteItem>): Promise<void> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug(`Updating quote item ${id}:`, item);
+      await client.quoteItems.patch(id, item as any);
+      this.logger.info(`Quote item ${id} updated`);
+    } catch (error) {
+      this.logger.error(`Failed to update quote item ${id}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteQuoteItem(quoteId: number, id: number): Promise<void> {
+    const client = await this.ensureClient();
+    try {
+      this.logger.debug(`Deleting quote item ${id} from quote ${quoteId}`);
+      await client.quoteItems.delete(quoteId, id);
+      this.logger.info(`Quote item ${id} deleted from quote ${quoteId}`);
+    } catch (error) {
+      this.logger.error(`Failed to delete quote item ${id}:`, error);
       throw error;
     }
   }

@@ -1,3 +1,96 @@
+## [Unreleased]
+
+### Bug Fixes
+
+* **tools:** return explicit "not found" error responses when API lookups return empty results to prevent LLM hallucination
+
+## [2.11.2](https://github.com/wyre-technology/autotask-mcp/compare/v2.11.1...v2.11.2) (2026-03-12)
+
+
+### Bug Fixes
+
+* quote item creation 404 and quote creation 500 errors ([#30](https://github.com/wyre-technology/autotask-mcp/issues/30)) ([7f8e64f](https://github.com/wyre-technology/autotask-mcp/commit/7f8e64f89350dba7962a56f2fa461b7db6af26ec)), closes [wyre-technology/autotask-node#149](https://github.com/wyre-technology/autotask-node/issues/149)
+
+## [2.11.1](https://github.com/wyre-technology/autotask-mcp/compare/v2.11.0...v2.11.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* **expenses:** correct weekEnding field name and required params for expense report creation ([226d38d](https://github.com/wyre-technology/autotask-mcp/commit/226d38d3e1f52509421fba6fe3cfa31fca9c3046))
+
+# [2.11.0](https://github.com/wyre-technology/autotask-mcp/compare/v2.10.4...v2.11.0) (2026-03-09)
+
+
+### Features
+
+* Quote Builder - create quotes with line items from cost sheets ([#29](https://github.com/wyre-technology/autotask-mcp/issues/29)) ([5da3a98](https://github.com/wyre-technology/autotask-mcp/commit/5da3a98895446b051923afa3aa568f51bc423f23))
+
+## [Unreleased]
+
+
+### Features
+
+* **quotes:** add quote builder support - create quotes with line items from cost sheets
+* **opportunities:** add autotask_get_opportunity and autotask_search_opportunities tools
+* **products:** add autotask_get_product and autotask_search_products tools
+* **services:** add autotask_get_service, autotask_search_services, autotask_get_service_bundle, autotask_search_service_bundles tools
+* **quote-items:** add full CRUD for quote items - autotask_create_quote_item, autotask_get_quote_item, autotask_search_quote_items, autotask_update_quote_item, autotask_delete_quote_item
+* **lazy-loading:** add progressive tool discovery mode (LAZY_LOADING=true) - reduces initial context from 42+ tools to 3 meta-tools (autotask_list_categories, autotask_list_category_tools, autotask_execute_tool)
+* **elicitation:** add MCP elicitation for quote builder - company lookup, opportunity selection, service/product selection
+* **router:** add autotask_router meta-tool for intent-based tool routing with parameter extraction
+
+## [2.10.4](https://github.com/wyre-technology/autotask-mcp/compare/v2.10.3...v2.10.4) (2026-03-09)
+
+
+### Bug Fixes
+
+* **tests:** update expense item test assertions to match refactored API ([9affc62](https://github.com/wyre-technology/autotask-mcp/commit/9affc62d0769cb3ce7d079f1fbfae0e3c694ff2b)), closes [#27](https://github.com/wyre-technology/autotask-mcp/issues/27)
+
+## [2.10.3](https://github.com/wyre-technology/autotask-mcp/compare/v2.10.2...v2.10.3) (2026-03-06)
+
+
+### Bug Fixes
+
+* **deps:** update autotask-node to compiled semaphore fix ([f282e21](https://github.com/wyre-technology/autotask-mcp/commit/f282e21385e9b2640b8de7747df6070a8aecc605))
+* **gateway:** skip autotask-node connection test in stateless mode ([67643c6](https://github.com/wyre-technology/autotask-mcp/commit/67643c691d233ca0c4b760f99474203e3584a6ae))
+* **tickets:** update autotask-node lockfile with PATCH collection endpoint fix ([4156635](https://github.com/wyre-technology/autotask-mcp/commit/4156635778bbd5be427bb55c8df3472ae6a62ca5))
+* **tickets:** update autotask-node to PATCH collection endpoint fix ([0cf01d8](https://github.com/wyre-technology/autotask-mcp/commit/0cf01d87b1063d6b27a98990a297de045fe17679))
+
+## [2.10.2](https://github.com/wyre-technology/autotask-mcp/compare/v2.10.1...v2.10.2) (2026-03-03)
+
+
+### Bug Fixes
+
+* **deps:** bump autotask-node to main branch with endpoint semaphore fix ([35cef9c](https://github.com/wyre-technology/autotask-mcp/commit/35cef9c659f9e0b399f03ccabcd9c9ea75878228))
+
+## [2.10.1](https://github.com/wyre-technology/autotask-mcp/compare/v2.10.0...v2.10.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* **tickets:** use PATCH instead of PUT for updateTicket ([c0a0b7b](https://github.com/wyre-technology/autotask-mcp/commit/c0a0b7bf046831982a39e699857b278474258588))
+
+# [2.10.0](https://github.com/wyre-technology/autotask-mcp/compare/v2.9.0...v2.10.0) (2026-03-03)
+
+
+### Features
+
+* **tools:** add autotask_update_ticket tool ([b73c3f9](https://github.com/wyre-technology/autotask-mcp/commit/b73c3f9faee84083510bcc7e07130c0577520a34)), closes [#28](https://github.com/wyre-technology/autotask-mcp/issues/28)
+* **tools:** wire autotask_update_ticket handler ([13fe142](https://github.com/wyre-technology/autotask-mcp/commit/13fe142082f04f95c2fefc6f48d51f485dab12b4))
+
+# [2.9.0](https://github.com/wyre-technology/autotask-mcp/compare/v2.8.1...v2.9.0) (2026-03-03)
+
+
+### Bug Fixes
+
+* **mapping:** coalesce concurrent cache refreshes and fix fetch-all fallback ([ea08f80](https://github.com/wyre-technology/autotask-mcp/commit/ea08f80379898d10f1447a2399ab429151790756))
+* **tests:** update expense item tests to match implemented API signatures ([7fac014](https://github.com/wyre-technology/autotask-mcp/commit/7fac014eedcbc27bf9753e719b042163e770f5ff))
+
+
+### Features
+
+* add create_expense_item tool and fix expense report accessors ([0cf9f09](https://github.com/wyre-technology/autotask-mcp/commit/0cf9f094e09d48fb4ed94e23242cfd354ab7f908))
+
 ## [2.8.1](https://github.com/wyre-technology/autotask-mcp/compare/v2.8.0...v2.8.1) (2026-03-03)
 
 
