@@ -75,7 +75,13 @@ export class AutotaskService {
         authConfig.apiUrl = apiUrl;
       }
 
-      this.client = await AutotaskClient.create(authConfig);
+      // Disable gzip compression — autotask-node sets Content-Encoding: gzip
+      // on requests but doesn't actually compress the body, causing the Autotask
+      // API to return 500 on child entity endpoints (e.g. POST /Quotes/{id}/Items).
+      // See: wyre-technology/autotask-node issue with transformRequest.
+      this.client = await AutotaskClient.create(authConfig, {
+        enableCompression: false,
+      });
 
       this.logger.info('Autotask client initialized successfully');
     } catch (error) {
@@ -176,7 +182,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating company:', company);
       const result = await client.accounts.create(company as any);
-      const companyId = (result.data as any)?.id;
+      const companyId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Company created with ID: ${companyId}`);
       return companyId;
     } catch (error) {
@@ -271,7 +277,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating contact:', contact);
       const result = await client.contacts.create(contact as any);
-      const contactId = (result.data as any)?.id;
+      const contactId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Contact created with ID: ${contactId}`);
       return contactId;
     } catch (error) {
@@ -491,7 +497,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating ticket:', ticket);
       const result = await client.tickets.create(ticket as any);
-      const ticketId = (result.data as any)?.id;
+      const ticketId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Ticket created with ID: ${ticketId}`);
       return ticketId;
     } catch (error) {
@@ -688,7 +694,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating project:', project);
       const result = await client.projects.create(project as any);
-      const projectId = (result.data as any)?.id;
+      const projectId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Project created with ID: ${projectId}`);
       return projectId;
     } catch (error) {
@@ -794,7 +800,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating configuration item:', configItem);
       const result = await client.configurationItems.create(configItem as any);
-      const configItemId = (result.data as any)?.id;
+      const configItemId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Configuration item created with ID: ${configItemId}`);
       return configItemId;
     } catch (error) {
@@ -937,7 +943,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating task:', task);
       const result = await client.tasks.create(task as any);
-      const taskId = (result.data as any)?.id;
+      const taskId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Task created with ID: ${taskId}`);
       return taskId;
     } catch (error) {
@@ -1170,7 +1176,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating expense report:', report);
       const result = await client.expenseReports.create(report as any);
-      const reportId = (result.data as any)?.id;
+      const reportId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Expense report created with ID: ${reportId}`);
       return reportId;
     } catch (error) {
@@ -1231,7 +1237,7 @@ export class AutotaskService {
     try {
       this.logger.debug('Creating expense item:', item);
       const result = await client.expenseItems.create(item as any);
-      const itemId = (result.data as any)?.id;
+      const itemId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Expense item created with ID: ${itemId}`);
       return itemId;
     } catch (error) {
@@ -1319,7 +1325,7 @@ export class AutotaskService {
 
       this.logger.debug('Creating quote:', quote);
       const result = await client.quotes.create(quote as any);
-      const quoteId = (result.data as any)?.id;
+      const quoteId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Quote created with ID: ${quoteId}`);
       return quoteId;
     } catch (error) {
@@ -1397,7 +1403,7 @@ export class AutotaskService {
       if (opportunity.opportunityCategoryID) oppData.opportunityCategoryID = opportunity.opportunityCategoryID;
 
       const result = await client.opportunities.create(oppData as any);
-      const newId = (result.data as any)?.id || (result.data as any)?.itemId;
+      const newId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Created opportunity with ID: ${newId}`);
       return newId;
     } catch (error) {
@@ -1604,7 +1610,7 @@ export class AutotaskService {
       // QuoteItems is a child entity of Quotes - must use parent URL:
       // POST /Quotes/{quoteId}/QuoteItems
       const result = await client.quoteItems.create(item.quoteID, quoteItem as any);
-      const itemId = (result.data as any)?.id;
+      const itemId = (result.data as any)?.itemId ?? (result.data as any)?.id;
       this.logger.info(`Quote item created with ID: ${itemId}`);
       return itemId;
     } catch (error) {
