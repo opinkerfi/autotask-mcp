@@ -20,14 +20,38 @@ export const listProjectPhasesTool: McpTool = {
 };
 
 export async function listProjectPhases(
-  _client: unknown,
-  _params: {
+  client: unknown,
+  params: {
     project_id: number;
   }
 ): Promise<{ result: unknown; message: string }> {
-  // TODO: Implement project phase listing via Autotask API
-  return {
-    result: [],
-    message: 'Not yet implemented',
-  };
+  const svc = client as any;
+
+  try {
+    // Access the underlying autotask-node client for phase queries
+    const atClient = await svc['ensureClient']();
+    const result = await atClient.phases.list({
+      filter: { projectID: params.project_id },
+    });
+
+    const phases = (result.data ?? []).map((p: any) => ({
+      id: p.id,
+      title: p.title ?? p.name,
+      description: p.description,
+      start_date: p.startDate,
+      due_date: p.dueDate,
+      is_completed: p.isCompleted,
+    }));
+
+    return {
+      result: { phases, count: phases.length },
+      message: `Found ${phases.length} phase(s) for project ${params.project_id}`,
+    };
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : String(err);
+    return {
+      result: { phases: [], count: 0, error },
+      message: `Failed to list phases: ${error}`,
+    };
+  }
 }

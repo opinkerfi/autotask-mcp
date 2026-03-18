@@ -1,73 +1,85 @@
 // opinkerfi: create-ticket tool
-// Context-aware Autotask ticket creation from GitHub issues
+// Context-aware Autotask ticket creation from GitHub issues.
+// Supports three modes: company ticket, project task, internal-dev task.
 
 import { McpTool } from '../../types/mcp.js';
 
 export const createTicketTool: McpTool = {
   name: 'ok_create_ticket',
   description:
-    'Create a new Autotask ticket from a GitHub issue, pre-filling fields from repo config and issue context.',
+    'Create an Autotask ticket linked to a GitHub issue. Modes: company (direct), project (under a project phase), internal-dev (shorthand for the OpinKerfi Internal Dev project). Title auto-formats as "#{issue_number} - {issue_title}".',
   inputSchema: {
     type: 'object',
     properties: {
-      issue_number: {
-        type: 'number',
-        description: 'GitHub issue number',
-      },
-      issue_title: {
+      company_id: { type: 'number', description: 'Autotask company ID' },
+      project_id: { type: 'number', description: 'Project ID (required for project/internal-dev mode)' },
+      phase_id:   { type: 'number', description: 'Phase ID within the project (optional)' },
+      issue_number: { type: 'number', description: 'GitHub issue number' },
+      issue_title:  { type: 'string', description: 'GitHub issue title' },
+      mode: {
         type: 'string',
-        description: 'GitHub issue title',
+        enum: ['company', 'project', 'internal-dev'],
+        description: 'Ticket creation mode',
       },
-      issue_body: {
-        type: 'string',
-        description: 'GitHub issue body / description',
-      },
-      company_id: {
-        type: 'number',
-        description: 'Autotask company ID to assign the ticket to',
-      },
-      project_id: {
-        type: 'number',
-        description: 'Autotask project ID to associate the ticket with',
-      },
-      phase_id: {
-        type: 'number',
-        description: 'Autotask project phase ID',
-      },
-      assignee_resource_id: {
-        type: 'number',
-        description: 'Autotask resource ID to assign the ticket to',
-      },
-      priority: {
-        type: 'number',
-        description: 'Ticket priority ID',
-      },
-      status: {
-        type: 'number',
-        description: 'Ticket status ID',
-      },
+      queue_id: { type: 'number', description: 'Queue ID override (defaults to ok-lausnir ser)' },
     },
-    required: ['issue_number', 'issue_title'],
+    required: ['company_id', 'issue_number', 'issue_title', 'mode'],
   },
 };
 
 export async function createTicket(
-  _client: unknown,
-  _params: {
-    issue_number: number;
-    issue_title: string;
-    issue_body?: string;
-    company_id?: number;
+  client: unknown,
+  params: {
+    company_id: number;
     project_id?: number;
     phase_id?: number;
-    assignee_resource_id?: number;
-    priority?: number;
-    status?: number;
+    issue_number: number;
+    issue_title: string;
+    mode: 'company' | 'project' | 'internal-dev';
+    queue_id?: number;
   }
 ): Promise<{ result: unknown; message: string }> {
-  // TODO: Implement ticket creation
-  return {
-    result: null,
-    message: 'Not yet implemented',
-  };
+  const svc = client as any;
+  const title = `#${params.issue_number} - ${params.issue_title}`;
+
+  try {
+    if ((params.mode === 'project' || params.mode === 'internal-dev') && !params.project_id) {
+      return {
+        result: { created: false, error: 'project_id is required for project/internal-dev mode' },
+        message: 'project_id is required for project/internal-dev mode',
+      };
+    }
+
+    const ticketData: Record<string, unknown> = {
+      companyID: params.company_id,
+      title,
+      status: 1,    // New
+      priority: 3,  // Standard
+      queueID: params.queue_id ?? 29682833, // ok-lausnir ser
+      dueDateTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+
+    if (params.mode === 'project' || params.mode === 'internal-dev') {
+      ticketData['projectID'] = params.project_id;
+      if (params.phase_id) {
+        ticketData['phaseID'] = params.phase_id;
+      }
+    }
+
+    const ticketId: number = await svc.createTicket(ticketData);
+    const ticket = await svc.getTicket(ticketId);
+    const ticketNumber: string = ticket?.ticketNumber ?? '';
+    const ticketUrl = `https://ww19.autotask.net/Autotask/AutotaskExtend/ExecuteCommand.aspx?Code=OpenTicketDetail&TicketID=${ticketId}`;
+
+    return {
+      result: { created: true, ticket_id: ticketId, ticket_number: ticketNumber, ticket_url: ticketUrl },
+      message: `Created ticket ${ticketNumber} (ID: ${ticketId}): "${title}"`,
+    };
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : String(err);
+    return {
+      result: { created: false, error },
+      message: `Failed to create ticket: ${error}`,
+    };
+  }
 }
