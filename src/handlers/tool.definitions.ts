@@ -2,8 +2,9 @@
 // Declarative schema definitions for all MCP tools
 
 import { McpTool } from './tool.handler.js';
+import { opinkerfiTools } from '../opinkerfi/index.js';
 
-export const TOOL_DEFINITIONS: McpTool[] = [
+const AUTOTASK_TOOL_DEFINITIONS: McpTool[] = [
   // Connection testing
   {
     name: 'autotask_test_connection',
@@ -1800,6 +1801,11 @@ export const TOOL_DEFINITIONS: McpTool[] = [
   }
 ];
 
+export const TOOL_DEFINITIONS: McpTool[] = [
+  ...AUTOTASK_TOOL_DEFINITIONS,
+  ...opinkerfiTools,
+];
+
 export const TOOL_CATEGORIES: Record<string, { description: string; tools: string[] }> = {
   utility: {
     description: 'Connection testing and field/picklist discovery',
@@ -1844,5 +1850,9 @@ export const TOOL_CATEGORIES: Record<string, { description: string; tools: strin
   company_notes: {
     description: 'Get, search, and create company notes',
     tools: ['autotask_get_company_note', 'autotask_search_company_notes', 'autotask_create_company_note']
+  },
+  opinkerfi: {
+    description: 'opinkerfi workflow tools: link GitHub issues to Autotask tickets, manage repo config, and query ticket status',
+    tools: ['ok_find_ticket', 'ok_create_ticket', 'ok_link_ticket_to_issue', 'ok_link_issue_to_ticket', 'ok_get_repo_config', 'ok_save_repo_config', 'ok_list_project_phases', 'ok_get_ticket_status']
   }
 };

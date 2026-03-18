@@ -8,6 +8,7 @@ import { Logger } from '../utils/logger.js';
 import { formatCompactResponse, detectEntityType, COMPACT_SEARCH_TOOLS } from '../utils/response.formatter.js';
 import { MappingService } from '../utils/mapping.service.js';
 import { TOOL_DEFINITIONS, TOOL_CATEGORIES } from './tool.definitions.js';
+import { opinkerfiHandlers } from '../opinkerfi/index.js';
 
 export interface McpTool {
   name: string;
@@ -1098,6 +1099,14 @@ export class AutotaskToolHandler {
     this.logger.debug(`Calling tool: ${name}`, args);
 
     try {
+      // Check opinkerfi tools first
+      const opinkerfiHandler = opinkerfiHandlers[name];
+      if (opinkerfiHandler) {
+        const { result, message } = await opinkerfiHandler(this.autotaskService, args);
+        const responseText = JSON.stringify({ message, data: result });
+        return { content: [{ type: 'text', text: responseText }] };
+      }
+
       const handler = this.getDispatchTable().get(name);
       if (!handler) throw new Error(`Unknown tool: ${name}`);
 
