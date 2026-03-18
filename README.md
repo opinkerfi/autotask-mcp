@@ -1,13 +1,11 @@
 # Autotask MCP Server
 
-[![Build Status](https://github.com/wyre-technology/autotask-mcp/actions/workflows/release.yml/badge.svg)](https://github.com/wyre-technology/autotask-mcp/actions/workflows/release.yml)
-[![codecov](https://codecov.io/gh/wyre-technology/autotask-mcp/graph/badge.svg)](https://codecov.io/gh/wyre-technology/autotask-mcp)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides AI assistants with structured access to Kaseya Autotask PSA data and operations.
 
-> **Note:** This project is maintained by [Wyre Technology](https://github.com/wyre-technology). Previously hosted at `asachs01/autotask-mcp`.
+> **Note:** This is the [opinkerfi](https://github.com/opinkerfi) fork of [wyre-technology/autotask-mcp](https://github.com/wyre-technology/autotask-mcp), extended with 8 workflow tools for automated ticket management and GitHub integration.
 
 <a href="https://glama.ai/mcp/servers/@wyre-technology/autotask-mcp">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@wyre-technology/autotask-mcp/badge" alt="Autotask MCP server" />
@@ -23,7 +21,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 
 **Claude Desktop** — download, open, done:
 
-1. Download `autotask-mcp.mcpb` from the [latest release](https://github.com/wyre-technology/autotask-mcp/releases/latest)
+1. Download `autotask-mcp.mcpb` from the [latest release](https://github.com/opinkerfi/autotask-mcp/releases/latest)
 2. Open the file (double-click or drag into Claude Desktop)
 3. Enter your Autotask credentials when prompted (Username, Secret, Integration Code)
 
@@ -36,7 +34,7 @@ claude mcp add autotask-mcp \
   -e AUTOTASK_USERNAME=your-user@company.com \
   -e AUTOTASK_SECRET=your-secret \
   -e AUTOTASK_INTEGRATION_CODE=your-code \
-  -- npx -y github:wyre-technology/autotask-mcp
+  -- npx -y github:opinkerfi/autotask-mcp
 ```
 
 See [Installation](#installation) for Docker and from-source methods.
@@ -55,6 +53,23 @@ See [Installation](#installation) for Docker and from-source methods.
 - **🐳 Docker Ready**: Containerized deployment with HTTP transport and health checks
 - **📊 Structured Logging**: Comprehensive logging with configurable levels and formats
 - **🧪 Test Coverage**: Comprehensive test suite with 80%+ coverage
+
+### Opinkerfi Workflow Tools
+
+This fork adds 8 workflow tools (prefixed `ok_`) for automating ticket management in opinkerfi's development workflow:
+
+| Tool | Description |
+|------|-------------|
+| `ok_find_ticket` | Multi-strategy search by issue number, title keywords, or ticket number |
+| `ok_create_ticket` | Create company, project, or internal-dev tickets from GitHub issues |
+| `ok_link_issue_to_ticket` | Add GitHub issue URL as a note on an Autotask ticket (idempotent) |
+| `ok_link_ticket_to_issue` | Add Autotask ticket URL to a GitHub issue body (idempotent) |
+| `ok_get_repo_config` | Read Autotask configuration from a repo's CLAUDE.md |
+| `ok_save_repo_config` | Write/update Autotask configuration in a repo's CLAUDE.md |
+| `ok_list_project_phases` | List phases for an Autotask project |
+| `ok_get_ticket_status` | Quick status lookup by ticket ID or number |
+
+See [SETUP.md](SETUP.md) for opinkerfi-specific setup instructions.
 
 ## Table of Contents
 
@@ -80,7 +95,7 @@ See [Installation](#installation) for Docker and from-source methods.
 
 The simplest method — no terminal, no JSON editing, no Node.js install required.
 
-1. Download `autotask-mcp.mcpb` from the [latest release](https://github.com/wyre-technology/autotask-mcp/releases/latest)
+1. Download `autotask-mcp.mcpb` from the [latest release](https://github.com/opinkerfi/autotask-mcp/releases/latest)
 2. Open the file (double-click or drag into Claude Desktop)
 3. Enter your Autotask credentials when prompted (Username, Secret, Integration Code)
 
@@ -91,7 +106,7 @@ claude mcp add autotask-mcp \
   -e AUTOTASK_USERNAME=your-user@company.com \
   -e AUTOTASK_SECRET=your-secret \
   -e AUTOTASK_INTEGRATION_CODE=your-code \
-  -- npx -y github:wyre-technology/autotask-mcp
+  -- npx -y github:opinkerfi/autotask-mcp
 ```
 
 ### Option 2: Docker
@@ -159,7 +174,7 @@ See [Gateway Mode](#gateway-mode) for details.
 ### Option 3: From Source (Development)
 
 ```bash
-git clone https://github.com/wyre-technology/autotask-mcp.git
+git clone https://github.com/opinkerfi/autotask-mcp.git
 cd autotask-mcp
 npm ci && npm run build
 ```
@@ -468,7 +483,7 @@ For **stdio** usage with Claude Desktop, see [Installation Option 2](#option-2-d
 
 ```bash
 # Clone repository
-git clone https://github.com/wyre-technology/autotask-mcp.git
+git clone https://github.com/opinkerfi/autotask-mcp.git
 cd autotask-mcp
 
 # Create environment file
@@ -505,7 +520,7 @@ docker compose --profile dev up autotask-mcp-dev
 ### Setup
 
 ```bash
-git clone https://github.com/wyre-technology/autotask-mcp.git
+git clone https://github.com/opinkerfi/autotask-mcp.git
 cd autotask-mcp
 npm install
 ```
@@ -737,9 +752,9 @@ By submitting a pull request, you agree to the terms of our [Contributor License
 
 ## Support
 
-- 📚 [Documentation](https://github.com/wyre-technology/autotask-mcp/wiki)
-- 🐛 [Issue Tracker](https://github.com/wyre-technology/autotask-mcp/issues)
-- 💬 [Discussions](https://github.com/wyre-technology/autotask-mcp/discussions)
+- 📚 [Documentation](https://github.com/opinkerfi/autotask-mcp/wiki)
+- 🐛 [Issue Tracker](https://github.com/opinkerfi/autotask-mcp/issues)
+- 💬 [Discussions](https://github.com/opinkerfi/autotask-mcp/discussions)
 
 ## Acknowledgments
 
