@@ -35,11 +35,11 @@
     "typescript",
     "nodejs"
   ],
-  "author": "Aaron Sachs",
+  "author": "opinkerfi",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/opinkerfi/autotask-mcp"
+    "url": "https://github.com/opinkerfi/autotask-mcp.git"
   },
   "homepage": "https://github.com/opinkerfi/autotask-mcp",
   "dependencies": {
