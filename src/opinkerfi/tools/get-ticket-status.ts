@@ -1,7 +1,7 @@
 // opinkerfi: get-ticket-status tool
 // Quick status lookup for an Autotask ticket
 
-import { McpTool } from '../../handlers/tool.handler.js';
+import { McpTool } from '../../types/mcp.js';
 
 export const getTicketStatusTool: McpTool = {
   name: 'ok_get_ticket_status',

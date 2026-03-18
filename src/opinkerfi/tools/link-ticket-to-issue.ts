@@ -1,7 +1,7 @@
 // opinkerfi: link-ticket-to-issue tool
 // Record an Autotask ticket number in a GitHub issue (comment or label)
 
-import { McpTool } from '../../handlers/tool.handler.js';
+import { McpTool } from '../../types/mcp.js';
 
 export const linkTicketToIssueTool: McpTool = {
   name: 'ok_link_ticket_to_issue',

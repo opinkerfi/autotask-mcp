@@ -1,7 +1,7 @@
 // opinkerfi: link-issue-to-ticket tool
 // Add a GitHub issue reference to an Autotask ticket note
 
-import { McpTool } from '../../handlers/tool.handler.js';
+import { McpTool } from '../../types/mcp.js';
 
 export const linkIssueToTicketTool: McpTool = {
   name: 'ok_link_issue_to_ticket',

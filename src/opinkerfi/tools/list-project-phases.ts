@@ -1,7 +1,7 @@
 // opinkerfi: list-project-phases tool
 // List phases for an Autotask project
 
-import { McpTool } from '../../handlers/tool.handler.js';
+import { McpTool } from '../../types/mcp.js';
 
 export const listProjectPhasesTool: McpTool = {
   name: 'ok_list_project_phases',

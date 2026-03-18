@@ -1,7 +1,7 @@
 // opinkerfi: create-ticket tool
 // Context-aware Autotask ticket creation from GitHub issues
 
-import { McpTool } from '../../handlers/tool.handler.js';
+import { McpTool } from '../../types/mcp.js';
 
 export const createTicketTool: McpTool = {
   name: 'ok_create_ticket',

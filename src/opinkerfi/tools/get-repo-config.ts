@@ -1,7 +1,7 @@
 // opinkerfi: get-repo-config tool
 // Read opinkerfi configuration from the repo's CLAUDE.md
 
-import { McpTool } from '../../handlers/tool.handler.js';
+import { McpTool } from '../../types/mcp.js';
 
 export const getRepoConfigTool: McpTool = {
   name: 'ok_get_repo_config',

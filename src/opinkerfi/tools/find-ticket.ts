@@ -1,7 +1,7 @@
 // opinkerfi: find-ticket tool
 // Multi-strategy search for Autotask tickets linked to GitHub issues
 
-import { McpTool } from '../../handlers/tool.handler.js';
+import { McpTool } from '../../types/mcp.js';
 
 export const findTicketTool: McpTool = {
   name: 'ok_find_ticket',

@@ -1,7 +1,7 @@
 // opinkerfi tool module
 // Exports all tool definitions and handler functions for opinkerfi workflow tools
 
-import { McpTool } from '../handlers/tool.handler.js';
+import { McpTool } from '../types/mcp.js';
 
 import { findTicketTool, findTicket } from './tools/find-ticket.js';
 import { createTicketTool, createTicket } from './tools/create-ticket.js';

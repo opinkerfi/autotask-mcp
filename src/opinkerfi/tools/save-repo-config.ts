@@ -1,7 +1,7 @@
 // opinkerfi: save-repo-config tool
 // Write opinkerfi configuration into the repo's CLAUDE.md
 
-import { McpTool } from '../../handlers/tool.handler.js';
+import { McpTool } from '../../types/mcp.js';
 
 export const saveRepoConfigTool: McpTool = {
   name: 'ok_save_repo_config',
