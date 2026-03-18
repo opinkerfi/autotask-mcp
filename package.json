@@ -1,7 +1,7 @@
 {
-  "name": "autotask-mcp",
+  "name": "@opinkerfi/autotask-mcp",
   "version": "2.12.0",
-  "description": "MCP (Model Context Protocol) server for Kaseya Autotask PSA integration",
+  "description": "Autotask MCP server with opinkerfi workflow tools",
   "main": "dist/entry.js",
   "bin": {
     "autotask-mcp": "./dist/entry.js"
@@ -37,6 +37,11 @@
   ],
   "author": "Aaron Sachs",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opinkerfi/autotask-mcp"
+  },
+  "homepage": "https://github.com/opinkerfi/autotask-mcp",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
     "autotask-node": "github:wyre-technology/autotask-node#v2.2.0",

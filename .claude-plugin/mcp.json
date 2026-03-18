@@ -1,0 +1,19 @@
+{
+  "name": "autotask-mcp",
+  "version": "1.0.0",
+  "description": "Autotask PSA MCP server with opinkerfi workflow tools",
+  "type": "mcp",
+  "installation": {
+    "type": "command",
+    "requiresEnvironmentVariables": [
+      "AUTOTASK_USERNAME",
+      "AUTOTASK_SECRET",
+      "AUTOTASK_INTEGRATION_CODE"
+    ],
+    "command": "npx -y github:opinkerfi/autotask-mcp",
+    "notes": "Set environment variables via: claude mcp add autotask-mcp -e AUTOTASK_USERNAME=... -e AUTOTASK_SECRET=... -e AUTOTASK_INTEGRATION_CODE=..."
+  },
+  "documentation": {
+    "setup": "See mcp/autotask.md in opinkerfi/ai marketplace for environment variables and configuration"
+  }
+}
